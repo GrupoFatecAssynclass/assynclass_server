@@ -1,0 +1,179 @@
+import { FastifyInstance } from "fastify";
+import { z } from "zod";
+import { ALUNOS, COMPANY, INSTITUTION, PROFESSORES, addCoupons, removeNullables, removeNullablesCoupons, updateInstitutionPoint, updateStudentPoint, updateTeacherPoint } from "../../db/db";
+import { Coupons } from "../../modelos/models";
+
+export async function companiesRoutes(app: FastifyInstance){
+
+    //ROTA PARA BUSCAR UMA EMPRESA EM ESPECIFICO
+    app.get("/company/:id", (req, response) => {
+        
+        const paramSchema = z.object({
+            id: z.string()
+        })
+
+        const {id} = paramSchema.parse(req.params);
+
+        const company = COMPANY.map(a => {
+            if(id == String(a.companyID))
+                return a;
+        }).filter(a => a !== undefined)
+
+        return  response.send(company[0]);
+    })
+
+    //ROTA PARA BUSCAR CUPONS DE UMA EMPRESA EM ESPECIFICO
+    app.get("/company/:id/coupons", (req, response) => {
+        
+        const paramSchema = z.object({
+            id: z.string()
+        })
+
+        const {id} = paramSchema.parse(req.params);
+
+        const company = COMPANY.map(a => {
+            if(id == String(a.companyID))
+                return a;
+        }).filter(a => a !== undefined)
+
+        if(company[0])
+            return  response.send(company[0].coupons);
+        return response.status(401).send();
+    })
+
+    //ATUALIZA CUPONS
+    app.post("/use_coupon", (req, res) => {
+        const bodySchema = z.object({
+            id: z.string(),
+            coupon_id: z.string(),
+            user_id: z.string(),
+            user_type: z.number()
+        });
+
+        const {id, coupon_id, user_id, user_type} = bodySchema.parse(req.body);
+
+        const company = COMPANY.find(c => c.companyID == id);
+
+        let coupon_code;
+        let coupon_group : Coupons | undefined;
+        if(company){
+            coupon_group = company.coupons.find(c => c.couponID == coupon_id);
+
+            if(coupon_group)
+                coupon_code = coupon_group.couponCode[coupon_group.couponCode.length-1];
+            else
+                return res.status(404).send();
+        }
+        else
+            return res.status(404).send();
+
+
+        if(user_type == 0){
+            const aluno = ALUNOS.find(s => s.studentID+"" == user_id);
+
+            if(aluno){
+                if(aluno.points > coupon_group.couponValue)
+                    updateStudentPoint(ALUNOS.findIndex(s => s == aluno), -coupon_group.couponValue, "");
+                else{
+                    return res.send({status: 401});
+                }
+            }
+        }
+        else if(user_type == 1){
+            const professor = PROFESSORES.find(t => t.teacherID+"" == user_id);
+
+            if(professor){
+                if(professor.points > coupon_group.couponValue)
+                    updateTeacherPoint(PROFESSORES.findIndex(t => t == professor), -coupon_group.couponValue);
+                else{
+                    return res.send({status: 401});
+                }
+            }
+        }
+        else if(user_type == 2){
+            const institution = INSTITUTION.find(i => i.instituitionID+"" == user_id);
+
+            if(institution){
+                if(institution.points > coupon_group.couponValue)
+                    updateInstitutionPoint(INSTITUTION.findIndex(i => i == institution), -coupon_group.couponValue);
+                else{
+                    return res.send({status: 401});
+                }
+            }
+        }
+        
+        coupon_group.couponCode.pop();
+        if(coupon_group.couponCode.length == 0){
+            delete company.coupons[company.coupons.findIndex(c => c == coupon_group)]
+            removeNullablesCoupons(COMPANY.findIndex(c => c == company));
+        }
+        return res.send({code: coupon_code})
+    });
+
+    //ROTA PARA POSTAR CUPONS
+    app.post("/coupons", (req, res) => {
+        const bodySchema = z.object({
+            title: z.string(),
+            description: z.string(),
+            value: z.number(),
+            days: z.number(),
+            codes: z.string(),
+            companyID: z.string()
+        });
+
+        const {companyID, title, description, value, days, codes} = bodySchema.parse(req.body);
+
+        const companyIndex = COMPANY.findIndex(c => c.companyID == companyID);
+
+        let coupons : Coupons[] = [];
+
+        const d1 = new Date(`${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate()}`);
+        const diffInMs = Number(new Date(d1.getTime() + days * 24 * 60 * 60 * 1000)) - Number(d1);
+        const resultDate = new Date(d1.getTime() + diffInMs);
+
+        coupons.push(
+            {
+                byCompany: companyID,
+                couponDescription: description,
+                couponName: title,
+                couponValue: value,
+                standOut: false,
+                endsIn: resultDate.toLocaleDateString(),
+                couponID: String(COMPANY[companyIndex].coupons.length),
+                couponCode: codes.split(",").map(c => c.trim())
+            }
+        );
+
+        if(COMPANY[companyIndex].plan){
+            addCoupons(companyIndex, coupons);
+            return res.status(200).send();
+        }
+        return res.status(401).send();
+        
+    });
+
+    //ROTA PARA BUSCAR CUPONS
+    app.get("/coupons", (_req, res) => {
+
+        let coupons : Coupons[] = [];
+
+        COMPANY.map(c => {
+            if(c)
+                coupons = coupons.concat(c.coupons);
+        });
+
+        return res.send(coupons);
+    });
+
+    app.post("/company/plan", (req, res) => {
+        /*
+            planName: string
+            planValue: number
+            startedIn: string
+            endsIn: string
+            planType: PlanTypes
+        */
+
+    });
+
+}
