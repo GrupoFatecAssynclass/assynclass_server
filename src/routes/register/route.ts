@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { ALUNOS, COMPANY, INSTITUTION, PROFESSORES, USUARIOS} from "../../db/db";
-import { UserType} from "../../modelos/models";
+import { PlanTypes, UserType} from "../../modelos/models";
 import { z } from "zod";
 
 export async function registerRoutes(app:FastifyInstance) {
@@ -215,7 +215,14 @@ export async function registerRoutes(app:FastifyInstance) {
                 companyID: id,
                 companyName: companyName,
                 coupons: [],
-                plan: null
+                plan: {
+                    cuponsAvailable: -1,
+                    endsIn: "",
+                    planType: PlanTypes.VOID,
+                    planValue: -1,
+                    startedIn: "",
+                    visibility: false
+                }
             })
 
         }

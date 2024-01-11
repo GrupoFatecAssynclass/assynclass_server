@@ -32,9 +32,12 @@ export enum SeriesAlunos{
 }
 
 export enum PlanTypes{
-    MONTHLY,
-    YEARLY,
-    CUSTOM
+    MONTHLY_NORMAL,
+    YEARLY_NORMAL,
+    MONTHLY_PLUS,
+    YEARLY_PLUS,
+    CUSTOM,
+    VOID
 }
 
 export interface User{
@@ -49,11 +52,11 @@ export interface student{
     studentID: number,
     ra: string,
     avatarURL: string,
-    teacherID: number[],
     studentGrade: number,
     birthday: string,
     contact: string,
     points: number,
+    teacherID: number[],
     inst: string,
     activitiesDone: string[]
 }
@@ -98,12 +101,24 @@ export interface Coupons{
     couponCode: string[]
 }
 
+export interface CouponsUsageChart{
+    couponID: string
+    companyID: string
+    numberOfCupons: number
+    usedCoupons: number
+    couponName: string
+    usedByStudents: number
+    usedByTeachers: number
+    usedByInstitutions: number
+}
+
 export interface Plan{
-    planName: string
+    cuponsAvailable: number
     planValue: number
     startedIn: string
     endsIn: string
-    planType: PlanTypes
+    planType: PlanTypes,
+    visibility: boolean
 }
 
 export interface Company{
@@ -111,7 +126,7 @@ export interface Company{
     companyName: string
     cnpj: string
     coupons: Coupons[]
-    plan: Plan | null
+    plan: Plan
 }
 
 export interface studentsGroups{

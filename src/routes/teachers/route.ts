@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { ALUNOS, GAMES, GRUPOS, INSTITUTION, PROFESSORES, updateTeacherPoint } from "../../db/db";
+import { ALUNOS, GAMES, GRUPOS, INSTITUTION, PROFESSORES, addAsTeacher, updateTeacherAvatar, updateTeacherPoint } from "../../db/db";
 import { z } from "zod";
 
 export async function teachersRoutes(app:FastifyInstance) {
@@ -51,6 +51,30 @@ export async function teachersRoutes(app:FastifyInstance) {
         return  response.status(200).send();
     })
 
+    //ROTA PARA ALTERAR O AVATAR DE UM ALUNO
+    app.put("/teacher/:id/avatar", (req, response) => {
+        
+        const paramSchema = z.object({
+            id: z.string()
+        });
+
+        const bodySchema = z.object({
+            avatar: z.string()
+        })
+
+        const {id} = paramSchema.parse(req.params);
+        const {avatar} = bodySchema.parse(req.body);
+
+        const professor = PROFESSORES.findIndex(p => String(p.teacherID) == id);
+
+        if(professor == -1)
+            return response.status(404).send();
+
+        updateTeacherAvatar(professor, avatar);
+
+        return  response.status(200).send();
+    })
+
     //ROTA PARA INFORMAÇÔES DE UM PROFESSOR ESPECIFICO
     app.get("/teacher/:id", (req, response) => {
     
@@ -82,6 +106,7 @@ export async function teachersRoutes(app:FastifyInstance) {
                 isMentor: prof.isMentor,
                 cpf: prof.cpf,
                 inst: instituitionName,
+                institutionID: prof.inst[0], 
                 points: prof.points
             });
         }
@@ -143,7 +168,7 @@ export async function teachersRoutes(app:FastifyInstance) {
     })
     
     //ROTA PARA BUSCAR PROFESSORES QUE SÃO MENTORES
-    app.get("/teachers/mentors", (req, res) => {
+    app.get("/teachers/mentors", (_req, res) => {
     
         const mentores = PROFESSORES.map(p => {
             if(p.isMentor)
@@ -230,5 +255,25 @@ export async function teachersRoutes(app:FastifyInstance) {
         // const fileList = fs.readdirSync(teacher_folder).map(f => f.split(".")[0]);
 
         return res.send(teacherGames);
-    })
+    });
+
+    //ACEITAR REQUISIÇÃO DO ALUNO
+    app.put("/teacher/add_student", (req, res) => {
+    
+        const bodySchema = z.object({
+            studentID: z.string(),
+            teacherID: z.string()
+        })
+        
+        const {studentID, teacherID} = bodySchema.parse(req.body);
+        
+        const aluno = ALUNOS.map((a, index) => {
+            if(a.studentID+"" == studentID)
+            return index;
+        }).filter(a => a !== undefined)[0];
+        
+        addAsTeacher(aluno, Number(teacherID));
+    
+        return res.status(200).send();
+    });
 }

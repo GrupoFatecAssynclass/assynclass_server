@@ -1,5 +1,5 @@
 import path from "node:path"
-import { User, UserType, student, SeriesAlunos, Teacher, MateriasProf, Institution, studentsGroups, Content, Chat, RequestMentor, GameContent, Company, Coupons, ItemList } from "../modelos/models"
+import { User, UserType, student, SeriesAlunos, Teacher, MateriasProf, Institution, studentsGroups, Content, Chat, RequestMentor, GameContent, Company, Coupons, ItemList, Plan, PlanTypes, CouponsUsageChart } from "../modelos/models"
 
 //COMO A SENHA FAZ PARTE DE USUARIO ELA TALVEZ NAO SEJA NECESSARIA EM ALUNO
 export const USUARIOS : User[] = [
@@ -237,7 +237,14 @@ export const COMPANY: Company[] = [
         companyID: "48121",
         companyName: "Assynclass",
         coupons: [],
-        plan: null
+        plan: {
+            cuponsAvailable: -1,
+            endsIn: "",
+            planType: PlanTypes.VOID,
+            planValue: -1,
+            startedIn: "",
+            visibility: false
+        }
     }
 ]
 
@@ -297,6 +304,7 @@ export let REQUISICOES: RequestMentor[] = [
     },
 ]
 
+export let COUPONS_USAGE: CouponsUsageChart[] = []
 
 export function removeNullables(){
     REQUISICOES = REQUISICOES.filter(r => r !== null);
@@ -304,7 +312,8 @@ export function removeNullables(){
 
 export function addAsTeacher(studentIndex : number | undefined, idTeacher : number){
     if(studentIndex != undefined){
-        ALUNOS[studentIndex].teacherID.push(idTeacher);
+        if(!ALUNOS[studentIndex].teacherID.includes(idTeacher))
+            ALUNOS[studentIndex].teacherID.push(idTeacher);
     }
 }
 
@@ -340,6 +349,10 @@ export function updateStudentAvatar(studentIndex: number, avatar: string){
     ALUNOS[studentIndex].avatarURL = avatar;
 }
 
+export function updateTeacherAvatar(teacherIndex: number, avatar: string){
+    PROFESSORES[teacherIndex].avatarURL = avatar;
+}
+
 export function updateTeacherPoint(teacherIndex: number, points: number){
     PROFESSORES[teacherIndex].points += points;
 }
@@ -356,10 +369,32 @@ export function removeNullablesCoupons(companyIndex: number){
     COMPANY[companyIndex].coupons = COMPANY[companyIndex].coupons.filter(c => c !== undefined);
 }
 
-export function addCoupons(companyIndex: number, coupons: Coupons[]){
+export function addCoupons(companyIndex: number, coupons: Coupons[], numberCoupons: number){
     COMPANY[companyIndex].coupons = COMPANY[companyIndex].coupons.concat(coupons);
+    COMPANY[companyIndex].plan.cuponsAvailable -= numberCoupons;
 }
 
 export function addListToInstitution(intitutionIndex: number, itens_list: ItemList[]){
     INSTITUTION[intitutionIndex].itens_list = itens_list;
+}
+
+export function updateCompanyPlan(companyIndex: number, plan: Plan){
+    COMPANY[companyIndex].plan = plan;
+}
+
+export function updateCouponUsage(companyID: string, couponID: string, userType: number){
+    COUPONS_USAGE = COUPONS_USAGE.map(c => {
+        if(c.companyID == companyID && c.couponID == couponID)
+            return {
+                companyID: c.companyID,
+                couponID: c.couponID,
+                couponName: c.couponName,
+                numberOfCupons: c.numberOfCupons,
+                usedCoupons: c.usedCoupons+1,
+                usedByStudents: c.usedByStudents + ((userType == 0) ? 1 : 0),
+                usedByTeachers: c.usedByTeachers + ((userType == 1) ? 1 : 0),
+                usedByInstitutions: c.usedByInstitutions + ((userType == 2) ? 1 : 0),
+            };
+        return c;
+    })
 }
