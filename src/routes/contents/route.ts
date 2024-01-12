@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { CONTENTS, sendContentTo } from "../../db/db";
+import { CONTENTS, GAME_CONTENT_VIEW, sendContentTo, updateView } from "../../db/db";
 import { z } from "zod";
 
 export async function contentsRoutes(app:FastifyInstance) {
@@ -35,6 +35,9 @@ export async function contentsRoutes(app:FastifyInstance) {
             if(c.teacherID == id && c.contentID+"" == idContent)
                 return c;
         }).filter(c => c !== undefined)[0];
+
+        //ATUALIZA GRAFICO
+        updateView(idContent, id, 0);
     
         return res.send({contents});
     })
@@ -50,6 +53,14 @@ export async function contentsRoutes(app:FastifyInstance) {
         });
     
         const {idTeacher, content, contentName, contentDescription} = bodySchema.parse(req.body);
+        
+        GAME_CONTENT_VIEW.push({
+            id: CONTENTS.length+"",
+            contentType: 0,
+            teacherID: idTeacher,
+            view: 0,
+            title: contentName
+        })
     
         CONTENTS.push({
             contentID: CONTENTS.length,
@@ -59,6 +70,7 @@ export async function contentsRoutes(app:FastifyInstance) {
             content: content,
             toStudent: []
         });
+
     
         return res.status(200).send();
     

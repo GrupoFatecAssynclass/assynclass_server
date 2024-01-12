@@ -4,7 +4,7 @@ import fs from "fs";
 import { z } from "zod";
 
 import path from "node:path"
-import { GAMES, removeNullablesGames, sendContentTo } from "../../db/db";
+import { GAMES, GAME_CONTENT_VIEW, removeNullablesGames, sendContentTo, updateView } from "../../db/db";
 
 export async function gamessRoutes(app:FastifyInstance) {
     
@@ -47,19 +47,21 @@ export async function gamessRoutes(app:FastifyInstance) {
         }
 
         if(gameContent){
-            //Alterar o nome do arquivo para algo mais aleatório mantendo o id do professor
             var fileID: string = `${teacherID}_`;
-
-            // fs.readdir(uploadDir, (err, files) => {
-            //     if (err) throw err;
-            //     fileID += files.length.toString();
-            // });
 
             fileID += Date.now() + ".asl";
 
             fs.writeFile(path.join(uploadDir, fileID), gameContent, (err) => {
                 if (err) throw err;
             });
+
+            GAME_CONTENT_VIEW.push({
+                id: fileID.split(".")[0],
+                contentType: 1,
+                teacherID,
+                view: 0,
+                title: (gameName != "") ? gameName : fileID.split(".")[0],
+            })
 
             GAMES.push(
                 {
@@ -106,8 +108,8 @@ export async function gamessRoutes(app:FastifyInstance) {
         if (!teacherHasGame)
             return res.status(404).send();
 
-        // if(!fs.existsSync(path.resolve(__dirname, "../../public", teacherID, id + ".asl")))
-        //     return res.status(404).send();
+        //ATUALIZA GRAFICO
+        updateView(id, teacherID, 1);
 
         return res.sendFile(id + ".asl", path.join(__dirname, "../../public", teacherID));
     });

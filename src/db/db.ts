@@ -1,5 +1,5 @@
 import path from "node:path"
-import { User, UserType, student, SeriesAlunos, Teacher, MateriasProf, Institution, studentsGroups, Content, Chat, RequestMentor, GameContent, Company, Coupons, ItemList, Plan, PlanTypes, CouponsUsageChart } from "../modelos/models"
+import { User, UserType, student, SeriesAlunos, Teacher, MateriasProf, Institution, studentsGroups, Content, Chat, RequestMentor, GameContent, Company, Coupons, ItemList, Plan, PlanTypes, CouponsUsageChart, Game_Content_View } from "../modelos/models"
 
 //COMO A SENHA FAZ PARTE DE USUARIO ELA TALVEZ NAO SEJA NECESSARIA EM ALUNO
 export const USUARIOS : User[] = [
@@ -285,6 +285,37 @@ export let GAMES: GameContent[] = [
         teacherID: "24680",
         toStudent: []
     },
+];
+
+export let GAME_CONTENT_VIEW : Game_Content_View[] = [
+    {
+        contentType: 1,
+        id: "54321_1702912728916",
+        teacherID: "54321",
+        view: 0,
+        title: "Soma básica"
+    },
+    {
+        contentType: 1,
+        id: "54321_1702928943855",
+        teacherID: "54321",
+        view: 0,
+        title: "Onde vivemos?"
+    },
+    {
+        contentType: 1,
+        id: "24680_1702989767362",
+        teacherID: "24680",
+        view: 0,
+        title: "Animais rápidos"
+    },
+    {
+        contentType: 1,
+        id: "24680_1702993547706",
+        teacherID: "24680",
+        view: 0,
+        title: "Corpo humano"
+    }
 ]
 
 export let CHATS: Chat[] = [
@@ -326,9 +357,9 @@ export function addMessage(chatID : number | undefined, msg: string){
 export function sendContentTo(contentIndex: number | undefined, toStudents: number[], contentType: number){
     if(contentIndex != undefined){
         if(contentType == 0)
-            CONTENTS[contentIndex].toStudent = toStudents;
+            CONTENTS[contentIndex].toStudent = CONTENTS[contentIndex].toStudent.concat(toStudents);
         else    
-            GAMES[contentIndex].toStudent = toStudents;
+            GAMES[contentIndex].toStudent = GAMES[contentIndex].toStudent.concat(toStudents);
     }
 }
 
@@ -397,4 +428,12 @@ export function updateCouponUsage(companyID: string, couponID: string, userType:
             };
         return c;
     })
+}
+
+export function updateView(id: string, teacherID: string, type: number){
+    let index = GAME_CONTENT_VIEW.findIndex(v => v.id == id && v.teacherID == teacherID && v.contentType == type);
+
+    if(index != -1)
+        GAME_CONTENT_VIEW[index].view += 1;
+    
 }

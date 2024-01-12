@@ -73,6 +73,14 @@ export interface Teacher{
     points: number
 }
 
+export interface Game_Content_View{
+    id: string,
+    teacherID: string,
+    title: string,
+    contentType: number,
+    view: number,
+}
+
 export interface Institution{
     instituitionID: number,
     instituitionName: string,
