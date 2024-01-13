@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { ALUNOS, INSTITUTION, PROFESSORES, addListToInstitution } from "../../db/db";
+import { ALUNOS, CONTENTS, GAMES, INSTITUTION, PROFESSORES, addListToInstitution } from "../../db/db";
+import { GameContent, student } from "../../modelos/models";
 
 export async function instituitionsRoutes(app: FastifyInstance) {
 
@@ -37,6 +38,77 @@ export async function instituitionsRoutes(app: FastifyInstance) {
             return res.send(instituition.points);
         return res.status(404).send();
     })
+
+    app.get("/instituition/:id/teachers_charts", (req, res) => {
+
+        const paramSchema = z.object({
+            id: z.string()
+        })
+    
+        const {id} = paramSchema.parse(req.params);
+
+        const data : any = [];
+
+        let teachers = PROFESSORES.filter(t => t.inst.includes(id));
+        teachers.forEach(t => {
+
+            let status = {
+                teacherID: t.teacherID,
+                teacherName: t.teacherName,
+                NumberOfContents: 0
+            }
+
+            let teacher_games = GAMES.filter(g => g.teacherID == (t.teacherID+"")).length;
+            let teacher_contents = CONTENTS.filter(c => c.teacherID == (t.teacherID+"")).length;
+
+            status.NumberOfContents = teacher_games + teacher_contents;
+
+            data.push(status);
+        })
+
+        return res.send(data);
+    });
+
+    app.get("/instituition/:id/groups_teachers", (req, res) => {
+        const paramSchema = z.object({
+            id: z.string()
+        })
+    
+        const {id} = paramSchema.parse(req.params);
+        let teachers = PROFESSORES.filter(t => t.inst.includes(id));
+
+        let data : any = [] 
+
+        teachers.forEach(t => {
+            const assigned : GameContent[] = GAMES.filter(g => g.teacherID == (t.teacherID+""));
+            let total_done = 0, total_expected = 0, percentage = 0;
+
+            assigned.forEach(g => {
+                
+                total_expected += g.toStudent.length;
+    
+                let teacher_students : student[] = ALUNOS.filter(s => s.teacherID.includes(Number(t.teacherID)) && g.toStudent.includes(s.studentID));
+                
+                teacher_students.forEach(s => {
+                    if(s.activitiesDone.includes(g.gameID))
+                        total_done += 1;
+                });
+
+            });
+
+            percentage = (total_done*100)/total_expected;
+
+            data.push(
+                {
+                    teacherName: t.teacherName,
+                    teacherID: t.teacherID,
+                    percentage: (total_expected == 0) ? 0 : percentage
+                }
+            )
+        })
+
+        return res.send(data);
+    });
 
     //ROTA PARA BUSCAR PROFESSORES DE UMA INSTITUIÇÃO
     app.get("/instituition/:id/teachers", (req, res) => {

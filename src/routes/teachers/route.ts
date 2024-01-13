@@ -33,14 +33,13 @@ export async function teachersRoutes(app:FastifyInstance) {
         const {id} = paramSchema.parse(req.params);
 
         const assigned : GameContent[] = GAMES.filter(g => g.teacherID == id);
-        let data : any= [];
-
+        let data : any = [];
+ 
         assigned.forEach(g => {
             let status = {
                 gameName: g.gameName,
                 gameID: g.gameID,
-                expected: 10,
-                // expected: g.toStudent.length,
+                expected: g.toStudent.length,
                 done_by: 0
             };
 
@@ -55,7 +54,7 @@ export async function teachersRoutes(app:FastifyInstance) {
         });
 
         return res.send(data);
-    })
+    });
 
     app.get("/teacher/:id/view_charts", (req, res) => {
 
