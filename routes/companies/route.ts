@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { ALUNOS, COMPANY, COUPONS_USAGE, INSTITUTION, PROFESSORES, addCoupons, removeNullables, removeNullablesCoupons, updateCompanyPlan, updateCouponUsage, updateInstitutionPoint, updateStudentPoint, updateTeacherPoint } from "../../db/db";
+import { ALUNOS, COMPANY, INSTITUTION, PROFESSORES, addCoupons, removeNullables, removeNullablesCoupons, updateCompanyPlan, updateInstitutionPoint, updateStudentPoint, updateTeacherPoint } from "../../db/db";
 import { Coupons, Plan, PlanTypes } from "../../modelos/models";
 
 export async function companiesRoutes(app: FastifyInstance){
@@ -103,7 +103,6 @@ export async function companiesRoutes(app: FastifyInstance){
         }
         
         coupon_group.couponCode.pop();
-        updateCouponUsage(id, coupon_id, user_type);
         if(coupon_group.couponCode.length == 0){
             delete company.coupons[company.coupons.findIndex(c => c == coupon_group)]
             removeNullablesCoupons(COMPANY.findIndex(c => c == company));
@@ -149,19 +148,6 @@ export async function companiesRoutes(app: FastifyInstance){
                         couponCode: code_coupons
                     }
                 );
-
-                COUPONS_USAGE.push(
-                    {
-                        companyID: companyID,
-                        couponID: String(COMPANY[companyIndex].coupons.length),
-                        numberOfCupons: code_coupons.length,
-                        usedCoupons: 0,
-                        couponName: title,
-                        usedByStudents: 0,
-                        usedByTeachers: 0,
-                        usedByInstitutions: 0
-                    }
-                );
     
                 addCoupons(companyIndex, coupons, code_coupons.length);
                 return res.status(200).send();
@@ -169,21 +155,6 @@ export async function companiesRoutes(app: FastifyInstance){
         }
         return res.status(401).send();
         
-    });
-
-    //ROTA PARA BUSCAR USO DE CUPONS 
-    app.get("/coupon_usage/:companyID", (req, res) => {
-
-        const paramSchema = z.object({companyID : z.string()});
-        const {companyID} = paramSchema.parse(req.params);
-
-        let charts = COUPONS_USAGE.map(c => {
-            if(c.companyID == companyID)
-                return c;
-            return null;
-        }).filter(c => c !== null);
-
-        return res.send(charts);
     });
 
     //ROTA PARA BUSCAR CUPONS

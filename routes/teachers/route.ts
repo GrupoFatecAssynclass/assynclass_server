@@ -1,7 +1,6 @@
 import { FastifyInstance } from "fastify";
-import { ALUNOS, GAMES, GAME_CONTENT_VIEW, GRUPOS, INSTITUTION, PROFESSORES, addAsTeacher, updateTeacherAvatar, updateTeacherPoint } from "../../db/db";
+import { ALUNOS, GAMES, GRUPOS, INSTITUTION, PROFESSORES, addAsTeacher, updateTeacherAvatar, updateTeacherPoint } from "../../db/db";
 import { z } from "zod";
-import { GameContent, student } from "../../modelos/models";
 
 export async function teachersRoutes(app:FastifyInstance) {
 
@@ -27,48 +26,6 @@ export async function teachersRoutes(app:FastifyInstance) {
         return res.send(professores)
     
     })
-
-    app.get("/teacher/:id/done_activities_chart", (req, res) => {
-        const paramSchema = z.object({id: z.string()});
-        const {id} = paramSchema.parse(req.params);
-
-        const assigned : GameContent[] = GAMES.filter(g => g.teacherID == id);
-        let data : any = [];
- 
-        assigned.forEach(g => {
-            let status = {
-                gameName: g.gameName,
-                gameID: g.gameID,
-                expected: g.toStudent.length,
-                done_by: 0
-            };
-
-            let teacher_students : student[] = ALUNOS.filter(s => s.teacherID.includes(Number(id)) && g.toStudent.includes(s.studentID));
-            
-            teacher_students.forEach(s => {
-                if(s.activitiesDone.includes(g.gameID))
-                    status.done_by += 1;
-            });
-
-            data.push(status);
-        });
-
-        return res.send(data);
-    });
-
-    app.get("/teacher/:id/view_charts", (req, res) => {
-
-        const paramSchema = z.object({id: z.string()});
-        const {id} = paramSchema.parse(req.params);
-
-        let view_charts = GAME_CONTENT_VIEW.map(v => {
-            if(v.teacherID == id)
-                return v;
-            return undefined;
-        }).filter(v => v !== undefined);
-
-        return res.send(view_charts);
-    });
 
     //ROTA PARA ALTERAR A PONTUAÇÃO DE UM ALUNO
     app.put("/teacher/:id", (req, response) => {
@@ -288,6 +245,14 @@ export async function teachersRoutes(app:FastifyInstance) {
             if(g.teacherID == teacherID)
                 return g;
         }).filter(g => g !== undefined);
+
+        // const teacher_folder = path.resolve(__dirname, "../../public", teacherID);
+
+        // if(!fs.existsSync(teacher_folder)){
+        //     return res.send([]);
+        // }
+
+        // const fileList = fs.readdirSync(teacher_folder).map(f => f.split(".")[0]);
 
         return res.send(teacherGames);
     });
